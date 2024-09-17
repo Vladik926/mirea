@@ -129,6 +129,86 @@ for i in range(106, 5, -25):
 6
 
 
-№4.31:
+
+
+№4.35:
+import math
+
+
+def calculator():
+    print("Простой калькулятор")
+    print("Введите два числа (x и y):")
+
+    x = float(input("Введите x: "))
+    y = float(input("Введите y: "))
+
+    print("\nВыберите действие:")
+    print("1. Сложение (x + y)")
+    print("2. Вычитание (x - y)")
+    print("3. Умножение (x * y)")
+    print("4. Деление (x / y)")
+    print("5. e^(x + y)")
+    print("6. sin(x + y)")
+    print("7. cos(x + y)")
+    print("8. x^y")
+
+    choice = input("\nВведите номер действия (1-8): ")
+
+    if choice == '1':
+        result = x + y
+        print(f"Результат: {x} + {y} = {result}")
+    elif choice == '2':
+        result = x - y
+        print(f"Результат: {x} - {y} = {result}")
+    elif choice == '3':
+        result = x * y
+        print(f"Результат: {x} * {y} = {result}")
+    elif choice == '4':
+        if y != 0:
+            result = x / y
+            print(f"Результат: {x} / {y} = {result}")
+        else:
+            print("Ошибка: Деление на ноль!")
+    elif choice == '5':
+        result = math.exp(x + y)
+        print(f"Результат: e^({x} + {y}) = {result}")
+    elif choice == '6':
+        result = math.sin(x + y)
+        print(f"Результат: sin({x} + {y}) = {result}")
+    elif choice == '7':
+        result = math.cos(x + y)
+        print(f"Результат: cos({x} + {y}) = {result}")
+    elif choice == '8':
+        result = x ** y
+        print(f"Результат: {x} ^ {y} = {result}")
+    else:
+        print("Ошибка: Неверный номер действия!")
+
+
+if __name__ == "__main__":
+    calculator()
+
+
+ответ:
+Простой калькулятор
+Введите два числа (x и y):
+Введите x: 25
+Введите y: 2
+
+Выберите действие:
+1. Сложение (x + y)
+2. Вычитание (x - y)
+3. Умножение (x * y)
+4. Деление (x / y)
+5. e^(x + y)
+6. sin(x + y)
+7. cos(x + y)
+8. x^y
+
+Введите номер действия (1-8): 8
+Результат: 25.0 ^ 2.0 = 625.0
+
+Process finished with exit code 0
+
 
 

@@ -1,0 +1,79 @@
+# Открытие файла 'input.txt' для чтения с кодировкой UTF-8
+with open('input.txt', 'r', encoding='utf-8') as file:
+    # Чтение всего содержимого файла в переменную text
+    text = file.read()
+
+# Импорт модуля для работы с регулярными выражениями
+import re
+
+# Обработка текста: удаление знаков препинания, приведение к нижнему регистру и удаление пробелов
+processed_text = re.sub(r'[^\w\s]', '', text.lower()).replace(' ', '')
+
+# Открытие файла 'processed.txt' для записи обработанного текста
+with open('processed.txt', 'w', encoding='utf-8') as file:
+    # Запись обработанного текста в файл
+    file.write(processed_text)
+
+# Импорт класса Counter для подсчета частоты элементов
+from collections import Counter
+
+# Подсчет частоты каждого символа в обработанном тексте
+single_letters = Counter(processed_text)
+# Подсчет частоты каждой пары символов в обработанном тексте
+double_letters = Counter(processed_text[i:i+2] for i in range(len(processed_text)-1))
+
+# Импорт математического модуля для логарифмических вычислений
+import math
+
+# Определение функции для расчета энтропии
+def calculate_entropy(counter):
+    # Подсчет общего количества элементов
+    total = sum(counter.values())
+    # Вычисление энтропии по формуле Шеннона
+    return -sum((count/total) * math.log2(count/total) for count in counter.values())
+
+# Вычисление энтропии для одиночных букв
+single_entropy = calculate_entropy(single_letters)
+# Вычисление энтропии для пар букв
+double_entropy = calculate_entropy(double_letters)
+
+# Вывод результатов энтропии
+print(f"Энтропия на одну букву: {single_entropy}")
+print(f"Энтропия на двухбуквенное сочетание: {double_entropy}")
+
+# Определение размера алфавита
+alphabet_size = len(single_letters)
+# Вычисление длины кода при равномерном кодировании
+uniform_code_length = math.log2(alphabet_size)
+# Вычисление избыточности
+redundancy = uniform_code_length - single_entropy
+
+# Вывод результатов длины кода и избыточности
+print(f"Длина кода при равномерном кодировании: {uniform_code_length}")
+print(f"Избыточность: {redundancy}")
+
+# Получение 20% самых частых символов
+most_common = [letter for letter, _ in single_letters.most_common(int(0.2 * len(single_letters)))]
+# Удаление этих символов из текста
+filtered_text = ''.join(char for char in processed_text if char not in most_common)
+# Подсчет новых частот
+new_single_letters = Counter(filtered_text)
+# Вычисление новой энтропии
+new_single_entropy = calculate_entropy(new_single_letters)
+
+# Вывод новой энтропии после удаления частых символов
+print(f"Новая энтропия после удаления частых символов: {new_single_entropy}")
+
+# Получение 20% самых редких символов
+least_common = [letter for letter, _ in single_letters.most_common()[int(-0.2 * len(single_letters)):]]
+# Получение 20% самых редких символов
+least_common = [letter for letter, _ in single_letters.most_common()[int(-0.2 * len(single_letters)):]]
+# Удаление этих символов из текста
+filtered_text = ''.join(char for char in processed_text if char not in least_common)
+# Подсчет новых частот символов после удаления редких
+new_single_letters = Counter(filtered_text)
+# Вычисление новой энтропии после удаления редких символов
+new_single_entropy = calculate_entropy(new_single_letters)
+
+# Вывод новой энтропии после удаления редких символов
+print(f"Новая энтропия после удаления редких символов: {new_single_entropy}")

@@ -1,0 +1,159 @@
+import numpy as np
+
+
+def get_hamming_parameters(k):
+    """
+    Функция для расчета параметров кода Хемминга
+    k - количество информационных разрядов
+    Возвращает r - количество проверочных разрядов и n - общую длину кода
+    """
+    r = 1
+    while 2 ** r < k + r + 1:
+        r += 1
+    n = k + r
+    return r, n
+
+
+def create_generator_matrix(k, r):
+    """
+    Создание порождающей матрицы
+    k - информационные разряды
+    r - проверочные разряды
+    """
+    n = k + r
+    # Создаем матрицу размером k x n, заполненную нулями
+    G = np.zeros((k, n), dtype=int)
+
+    # Заполняем единичную матрицу для информационных битов
+    current_col = 0
+    for i in range(k):
+        pos = 0
+        while pos < n:
+            if not is_power_of_two(pos + 1):
+                if current_col == i:
+                    G[i][pos] = 1
+                pos += 1
+                current_col += 1
+            else:
+                pos += 1
+
+    # Заполняем проверочные биты
+    for i in range(k):
+        for j in range(r):
+            power = 2 ** j - 1
+            if power < n:
+                # Вычисляем значение проверочного бита
+                G[i][power] = calculate_parity_bit(G[i], power, n)
+
+    return G
+
+
+def is_power_of_two(n):
+    """Проверка, является ли число степенью двойки"""
+    return n != 0 and (n & (n - 1)) == 0
+
+
+def calculate_parity_bit(row, pos, n):
+    """Вычисление значения проверочного бита"""
+    result = 0
+    for i in range(n):
+        if i != pos and row[i] == 1:
+            binary = format(i + 1, 'b')
+            if len(binary) > pos and binary[-(pos + 1)] == '1':
+                result ^= 1
+    return result
+
+
+def create_check_matrix(k, r):
+    """Создание проверочной матрицы"""
+    n = k + r
+    H = np.zeros((r, n), dtype=int)
+
+    # Заполняем матрицу
+    for i in range(n):
+        col = format(i + 1, f'0{r}b')
+        for j in range(r):
+            H[j][i] = int(col[-(j + 1)])
+
+    return H
+
+
+def encode_message(message, G):
+    """Кодирование сообщения"""
+    return np.dot(message, G) % 2
+
+
+def add_error(encoded_message, position):
+    """Внесение ошибки в указанную позицию"""
+    encoded_message[position] ^= 1
+    return encoded_message
+
+
+def find_error(received_message, H):
+    """Поиск ошибки с помощью синдрома"""
+    syndrome = np.dot(H, received_message) % 2
+    # Преобразуем синдром в десятичное число
+    error_position = 0
+    for i in range(len(syndrome)):
+        error_position += syndrome[i] * (2 ** i)
+    return int(error_position - 1) if error_position > 0 else -1
+
+
+def main():
+    # Запрашиваем количество информационных разрядов
+    k = int(input("Введите количество информационных разрядов (k): "))
+
+    # Вычисляем параметры кода
+    r, n = get_hamming_parameters(k)
+    print(f"\nПараметры кода Хемминга:")
+    print(f"Количество информационных разрядов (k): {k}")
+    print(f"Количество проверочных разрядов (r): {r}")
+    print(f"Общая длина кода (n): {n}")
+
+    # Создаем порождающую матрицу
+    G = create_generator_matrix(k, r)
+    print("\nПорождающая матрица G:")
+    print(G)
+
+    # Создаем проверочную матрицу
+    H = create_check_matrix(k, r)
+    print("\nПроверочная матрица H:")
+    print(H)
+
+    # Генерируем случайное информационное сообщение
+    message = np.random.randint(0, 2, k)
+    print("\nИсходное сообщение:")
+    print(message)
+
+    # Кодируем сообщение
+    encoded_message = encode_message(message, G)
+    print("\nЗакодированное сообщение:")
+    print(encoded_message)
+
+    # Вносим ошибку
+    error_position = np.random.randint(0, n)
+    received_message = add_error(encoded_message.copy(), error_position)
+    print(f"\nСообщение с ошибкой в позиции {error_position}:")
+    print(received_message)
+
+    # Находим и исправляем ошибку
+    detected_error_pos = find_error(received_message, H)
+    if detected_error_pos >= 0:
+        print(f"\nОбнаружена ошибка в позиции: {detected_error_pos}")
+        # Исправляем ошибку
+        corrected_message = received_message.copy()
+        corrected_message[detected_error_pos] ^= 1
+        print("\nИсправленное сообщение:")
+        print(corrected_message)
+
+        # Проверяем правильность исправления
+        if np.array_equal(corrected_message, encoded_message):
+            print("\nОшибка успешно исправлена!")
+        else:
+            print("\nОшибка при исправлении!")
+    else:
+        print("\nОшибок не обнаружено")
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,186 @@
+import math
+from collections import Counter
+
+
+# 1. Статистическая обработка текста
+def analyze_text(text):
+    # Убираем пробелы и неалфавитные символы для упрощения
+    text = ''.join([ch for ch in text if ch.isalpha()])
+    total_chars = len(text)
+
+    # Подсчитываем частоты символов
+    frequencies = Counter(text)
+
+    # Результирующие таблицы частот и вероятностей
+    probabilities = {char: freq / total_chars for char, freq in frequencies.items()}
+
+    return frequencies, probabilities
+
+
+# 2. Вычисление энтропии текста
+def calculate_entropy(probabilities):
+    entropy = 0
+    for prob in probabilities.values():
+        entropy -= prob * math.log2(prob)
+    return entropy
+
+
+# 3. Длина кода при равномерном кодировании
+def uniform_code_length(symbol_count):
+    return math.log2(symbol_count)
+
+
+# 4. Избыточность
+def calculate_redundancy(entropy, uniform_length):
+    return 1 - (entropy / uniform_length)
+
+
+# 5. Метод Шеннона-Фано для кодирования
+def shannon_fano(symbol_probabilities):
+    sorted_symbols = sorted(symbol_probabilities.items(), key=lambda x: x[1], reverse=True)
+
+    def recursive_shannon_fano(symbols, prefix=""):
+        if len(symbols) == 1:
+            return {symbols[0][0]: prefix}
+
+        # Суммируем вероятности для разделения символов на две группы
+        total_prob = sum(prob for _, prob in symbols)
+        cumulative_prob = 0
+        split_index = 0
+        for i, (symbol, prob) in enumerate(symbols):
+            cumulative_prob += prob
+            if cumulative_prob >= total_prob / 2:
+                split_index = i + 1
+                break
+
+        # Рекурсивное разделение и построение кодов
+        left = symbols[:split_index]
+        right = symbols[split_index:]
+
+        left_codes = recursive_shannon_fano(left, prefix + "0")
+        right_codes = recursive_shannon_fano(right, prefix + "1")
+
+        return {**left_codes, **right_codes}
+
+    return recursive_shannon_fano(sorted_symbols)
+
+
+# 6. Средняя длина кода
+def average_code_length(codes, probabilities):
+    avg_length = 0
+    for symbol in codes:
+        avg_length += len(codes[symbol]) * probabilities[symbol]
+    return avg_length
+
+
+# 7. Эффективность сжатия
+def compression_efficiency(entropy, avg_length):
+    return entropy / avg_length
+
+
+# 8. Кодирование текста
+def encode_text(text, codes):
+    return ''.join([codes[char] for char in text if char.isalpha()])
+
+
+# 9. Декодирование текста
+def decode_text(encoded_text, codes):
+    reversed_codes = {v: k for k, v in codes.items()}
+    decoded_text = ''
+    buffer = ''
+
+    for bit in encoded_text:
+        buffer += bit
+        if buffer in reversed_codes:
+            decoded_text += reversed_codes[buffer]
+            buffer = ''
+
+    return decoded_text
+
+
+# Функция для анализа двухбуквенных сочетаний
+def analyze_two_letter_combinations(text):
+    combinations = [text[i:i + 2] for i in range(len(text) - 1)]
+    total_combinations = len(combinations)
+
+    # Подсчитываем частоты двухбуквенных сочетаний
+    frequencies = Counter(combinations)
+
+    # Результирующие таблицы частот и вероятностей
+    probabilities = {comb: freq / total_combinations for comb, freq in frequencies.items()}
+
+    return frequencies, probabilities
+
+
+# Основная программа
+if __name__ == "__main__":
+## Текст для анализа
+    text = "алйтоцуашщрйща йцтащшурпайц туазйшруазоа23984нк72ек92р к23щккн23гкн94е8422ен2840е н20не 2ен20н9г2    0ен е0  не20е20ен204ен402е209г 22цушщар цшкцкгоцшрац20 рак9-скг49 ег249ег2ьйчбкц осашофцэзат  4зш цфщатцфщталды адотыфщзат йдылмтфгщырмыпцкт апоыивмгщфыкртозптфыщмшытисшщгфрцвзъйлаоцзтошщмстщытфцалоцзщуароцфаофзцщажьж.офаяол029ст 5м2т -57 725-мстт мс 852т мг7-2  5 20мг29г   к39ГК5гк5г2 0к5г2095мт м 2тХБЗАЬУзщоцаЬАзуьыазщофащАУАЦАРШЩЦРУАШЦОУРАШЩРЦФАШЩЫРАТЦФЩШ   ШЩАрщршРАШЦУЩРШЩАЫОЫЗО  ЗЗЗЗЗЗЗЗЗЗЗЗЗтцуашоцшуарцшщуарцшщарцшщуарцарцарфолцщзаоцзуаогртцгсттаг7цткуаецуаоегшцаеоегпог"
+
+    # 1. Анализ однобуквенных сочетаний
+    print("Анализ однобуквенных сочетаний:")
+    frequencies, probabilities = analyze_text(text)
+    print(f"Частоты символов: {frequencies}")
+    print(f"Вероятности символов: {probabilities}")
+
+    # 2. Вычисление энтропии
+    entropy = calculate_entropy(probabilities)
+    print(f"Энтропия: {entropy:.4f} бит на символ")
+
+    # 3. Длина кода при равномерном кодировании
+    uniform_length = uniform_code_length(len(frequencies))
+    print(f"Длина кода при равномерном кодировании: {uniform_length:.4f} бит")
+
+    # 4. Избыточность
+    redundancy = calculate_redundancy(entropy, uniform_length)
+    print(f"Избыточность: {redundancy:.4f}")
+
+    # 5. Построение схемы кодирования методом Шеннона-Фано
+    codes = shannon_fano(probabilities)
+    print("Коды Шеннона-Фано для однобуквенных сочетаний:")
+    for char, code in codes.items():
+        print(f"{char}: {code}")
+
+    # 6. Средняя длина элементарного кода
+    avg_length = average_code_length(codes, probabilities)
+    print(f"Средняя длина элементарного кода: {avg_length:.4f} бит")
+
+    # 7. Эффективность сжатия
+    efficiency = compression_efficiency(entropy, avg_length)
+    print(f"Эффективность сжатия: {efficiency:.4f}")
+
+    # 8. Кодирование текста
+    encoded_text = encode_text(text, codes)
+    print(f"Закодированный текст: {encoded_text}")
+
+    # 9. Декодирование текста
+    decoded_text = decode_text(encoded_text, codes)
+    print(f"Декодированный текст: {decoded_text}")
+
+    # 10. Анализ двухбуквенных сочетаний
+    print("\nАнализ двухбуквенных сочетаний:")
+    two_letter_frequencies, two_letter_probabilities = analyze_two_letter_combinations(text)
+    print(f"Частоты двухбуквенных сочетаний: {two_letter_frequencies}")
+    print(f"Вероятности двухбуквенных сочетаний: {two_letter_probabilities}")
+
+    # 11. Построение схемы кодирования методом Шеннона-Фано для двухбуквенных сочетаний
+    two_letter_codes = shannon_fano(two_letter_probabilities)
+    print("Коды Шеннона-Фано для двухбуквенных сочетаний:")
+    for comb, code in two_letter_codes.items():
+        print(f"{comb}: {code}")
+
+    # 12. Средняя длина элементарного кода для двухбуквенных сочетаний
+    avg_two_letter_length = average_code_length(two_letter_codes, two_letter_probabilities)
+    print(f"Средняя длина элементарного кода для двухбуквенных сочетаний: {avg_two_letter_length:.4f} бит")
+
+    # 13. Эффективность сжатия для двухбуквенных сочетаний
+    efficiency_two_letter = compression_efficiency(entropy, avg_two_letter_length)
+    print(f"Эффективность сжатия для двухбуквенных сочетаний: {efficiency_two_letter:.4f}")
+
+    # 14. Кодирование текста с использованием двухбуквенных сочетаний
+    two_letter_encoded_text = ''.join([two_letter_codes.get(text[i:i+2], '') for i in range(0, len(text) - 1, 2)])
+    print(f"Закодированный текст для двухбуквенных сочетаний: {two_letter_encoded_text}")
+
+    # 15. Декодирование текста с использованием двухбуквенных сочетаний
+    two_letter_decoded_text = decode_text(two_letter_encoded_text, two_letter_codes)
+    print(f"Декодированный текст для двухбуквенных сочетаний: {two_letter_decoded_text}")

@@ -1,0 +1,161 @@
+import math
+from collections import Counter
+from heapq import heappush, heappop, heapify
+
+
+def calculate_entropy(text):
+    # Подсчет частоты каждого символа
+    freq = Counter(text)
+    length = len(text)
+
+    # Вычисление энтропии
+    entropy = 0
+    for count in freq.values():
+        probability = count / length
+        entropy -= probability * math.log2(probability)
+
+    return entropy
+
+
+def build_huffman_tree(freq):
+    # Создание очереди с приоритетами для построения дерева Хаффмана
+    heap = []
+    for char, frequency in freq.items():
+        heappush(heap, [frequency, [char, ""]])
+
+    # Построение дерева
+    while len(heap) > 1:
+        lo = heappop(heap)
+        hi = heappop(heap)
+        for pair in lo[1:]:
+            pair[1] = '0' + pair[1]
+        for pair in hi[1:]:
+            pair[1] = '1' + pair[1]
+        heappush(heap, [lo[0] + hi[0]] + lo[1:] + hi[1:])
+
+    return heap[0][1:]
+
+
+def get_huffman_codes(tree):
+    # Преобразование дерева в словарь кодов
+    return {char: code for char, code in tree}
+
+
+def encode_text(text, codes):
+    # Кодирование текста
+    return ''.join(codes[char] for char in text)
+
+
+def decode_text(encoded_text, codes):
+    # Декодирование текста
+    reverse_codes = {code: char for char, code in codes.items()}
+    current_code = ''
+    decoded_text = ''
+
+    for bit in encoded_text:
+        current_code += bit
+        if current_code in reverse_codes:
+            decoded_text += reverse_codes[current_code]
+            current_code = ''
+
+    return decoded_text
+
+
+def process_bigrams(text):
+    # Создание списка биграмм
+    bigrams = [text[i:i + 2] for i in range(0, len(text) - 1, 2)]
+    if len(text) % 2:
+        bigrams.append(text[-1] + ' ')
+    return bigrams
+
+
+# Основная часть программы
+text = "ищмишмиамивашгзи ши уги ши уи ри ги шгимшгмсанг игш н иваш ивало иващшр агш "  # Замените на свой текст
+
+# 1. Расчет энтропии
+entropy = calculate_entropy(text)
+print(f"Энтропия на символ: {entropy:.2f} бит")
+
+# 2. Длина кода при равномерном кодировании
+unique_chars = len(set(text))
+uniform_length = math.ceil(math.log2(unique_chars))
+print(f"Длина равномерного кода: {uniform_length} бит")
+
+# 3. Избыточность
+redundancy = 1 - (entropy / uniform_length)
+print(f"Избыточность: {redundancy:.2f}")
+
+# 4. Однобуквенное кодирование Хаффмана
+freq = Counter(text)
+huffman_tree = build_huffman_tree(freq)
+codes = get_huffman_codes(huffman_tree)
+
+# Расчет средней длины кода
+avg_length = sum(len(code) * freq[char] / len(text) for char, code in codes.items())
+print(f"Средняя длина кода Хаффмана: {avg_length:.2f} бит")
+
+# Эффективность сжатия
+compression_ratio = uniform_length / avg_length
+print(f"Эффективность сжатия: {compression_ratio:.2f}")
+
+# 5. Кодирование и декодирование однобуквенных сочетаний
+encoded_text = encode_text(text, codes)
+decoded_text = decode_text(encoded_text, codes)
+
+print("\nРезультаты однобуквенного кодирования:")
+print(f"Исходный текст: {text}")
+print(f"Закодированный текст: {encoded_text}")
+print(f"Декодированный текст: {decoded_text}")
+print(f"Коды символов:", codes)
+
+# 6. Двухбуквенное кодирование (биграммы)
+bigrams = process_bigrams(text)
+bigram_freq = Counter(bigrams)
+bigram_tree = build_huffman_tree(bigram_freq)
+bigram_codes = get_huffman_codes(bigram_tree)
+
+# Расчет средней длины кода для биграмм
+bigram_avg_length = sum(len(code) * bigram_freq[bigram] / len(bigrams)
+                        for bigram, code in bigram_codes.items()) / 2  # делим на 2, так как это длина на символ
+
+print("\nРезультаты двухбуквенного кодирования:")
+print(f"Средняя длина кода для биграмм (на символ): {bigram_avg_length:.2f} бит")
+
+# Эффективность сжатия для биграмм
+bigram_compression_ratio = uniform_length / bigram_avg_length
+print(f"Эффективность сжатия для биграмм: {bigram_compression_ratio:.2f}")
+
+# Кодирование и декодирование биграмм
+encoded_bigrams = ''.join(bigram_codes[bigram] for bigram in bigrams)
+print(f"Закодированный текст (биграммы): {encoded_bigrams}")
+
+
+# Функция для декодирования биграмм
+def decode_bigrams(encoded_text, codes):
+    reverse_codes = {code: char for char, code in codes.items()}
+    current_code = ''
+    decoded_pairs = []
+
+    for bit in encoded_text:
+        current_code += bit
+        if current_code in reverse_codes:
+            decoded_pairs.append(reverse_codes[current_code])
+            current_code = ''
+
+    return ''.join(pair for pair in decoded_pairs).rstrip()
+
+
+decoded_bigrams = decode_bigrams(encoded_bigrams, bigram_codes)
+print(f"Декодированный текст (биграммы): {decoded_bigrams}")
+
+# 7. Сравнительный анализ
+print("\nСравнительный анализ:")
+print(f"Однобуквенное кодирование - средняя длина: {avg_length:.2f} бит/символ")
+print(f"Двухбуквенное кодирование - средняя длина: {bigram_avg_length:.2f} бит/символ")
+print(f"Улучшение: {((avg_length - bigram_avg_length) / avg_length * 100):.2f}%")
+
+# 8. Дополнительная статистика
+print("\nДополнительная статистика:")
+print(f"Размер исходного текста: {len(text)} символов")
+print(f"Размер сжатого текста (однобуквенное): {len(encoded_text)} бит")
+print(f"Размер сжатого текста (двухбуквенное): {len(encoded_bigrams)} бит")

@@ -1,0 +1,108 @@
+import random
+
+
+def create_hamming_table(info_bits):
+    # Вычисляем количество проверочных битов
+    r = 1
+    while 2 ** r < info_bits + r + 1:
+        r += 1
+
+    # Создаем таблицу Хемминга
+    n = info_bits + r  # общая длина кода
+    table = []
+
+    # Заполняем таблицу
+    for i in range(n):
+        # Преобразуем позицию (i+1) в двоичное число и дополняем нулями слева
+        bin_pos = format(i + 1, f'0{r}b')
+        # Добавляем строку в таблицу
+        table.append([int(bit) for bit in bin_pos])
+
+    return table, r
+
+
+def encode_message(info_bits, message):
+    # Создаем таблицу Хемминга
+    table, r = create_hamming_table(len(message))
+
+    # Создаем кодовое слово с местами для проверочных битов
+    code = []
+    msg_index = 0
+    for i in range(len(message) + r):
+        # Если позиция является степенью двойки, добавляем 0 (временно)
+        if bin(i + 1).count('1') == 1:
+            code.append(0)
+        else:
+            # Добавляем информационный бит
+            code.append(message[msg_index])
+            msg_index += 1
+
+    # Вычисляем проверочные биты
+    for i in range(r):
+        check_sum = 0
+        for j in range(len(code)):
+            if table[j][i] == 1 and code[j] == 1:
+                check_sum += 1
+        # Устанавливаем проверочный бит
+        pos = 2 ** i - 1
+        code[pos] = check_sum % 2
+
+    return code
+
+
+def find_error(received_code):
+    # Получаем параметры кода
+    n = len(received_code)
+    r = 1
+    while 2 ** r < n + 1:
+        r += 1
+
+    # Создаем таблицу Хемминга
+    table, _ = create_hamming_table(n - r)
+
+    # Вычисляем синдром
+    syndrome = []
+    for i in range(r):
+        check_sum = 0
+        for j in range(n):
+            if table[j][i] == 1 and received_code[j] == 1:
+                check_sum += 1
+        syndrome.append(check_sum % 2)
+
+    # Преобразуем синдром в десятичное число
+    error_pos = 0
+    for i in range(len(syndrome)):
+        error_pos += syndrome[i] * (2 ** i)
+
+    return error_pos - 1 if error_pos > 0 else -1
+
+
+def main():
+    # Запрашиваем количество информационных разрядов
+    info_bits = int(input("Введите количество информационных разрядов: "))
+
+    # Генерируем случайное сообщение
+    message = [random.randint(0, 1) for _ in range(info_bits)]
+    print(f"Исходное сообщение: {message}")
+
+    # Кодируем сообщение
+    encoded = encode_message(info_bits, message)
+    print(f"Закодированное сообщение: {encoded}")
+
+    # Вносим ошибку в случайную позицию
+    error_position = random.randint(0, len(encoded) - 1)
+    received = encoded.copy()
+    received[error_position] = 1 - received[error_position]
+    print(f"Принятое сообщение с ошибкой в позиции {error_position}: {received}")
+
+    # Находим и исправляем ошибку
+    found_error = find_error(received)
+    if found_error >= 0:
+        received[found_error] = 1 - received[found_error]
+        print(f"Исправленное сообщение: {received}")
+    else:
+        print("Ошибок не обнаружено")
+
+
+if __name__ == "__main__":
+    main()
